@@ -62,8 +62,26 @@ pub mod paging;
 pub mod console {
     pub use super::platform::console::*;
 
+    #[allow(dead_code)]
+    fn write_color(color: u8) {
+        putchar(27);
+        putchar('[' as u8);
+        if color == 0 {
+            putchar(48);
+        } else {
+            putchar((color / 10 % 10) + 48);
+            putchar(color % 10 + 48);
+        }
+        putchar('m' as u8);
+    }
+
     /// Write a slice of bytes to the console.
     pub fn write_bytes(bytes: &[u8]) {
+        // for (i, c) in bytes.iter().enumerate() {
+        //     write_color(30 + (i % 8) as u8);
+        //     putchar(*c);
+        // }
+        // write_color(0);
         for c in bytes {
             putchar(*c);
         }

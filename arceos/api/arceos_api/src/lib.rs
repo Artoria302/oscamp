@@ -375,6 +375,14 @@ pub mod io {
     }
 }
 
+/// Random operations.
+pub mod random {
+    define_api! {
+        /// Gets the random value.
+        pub fn ax_random() -> u128;
+    }
+}
+
 /// Re-exports of ArceOS modules.
 ///
 /// You should prefer to use other APIs rather than these modules. The modules

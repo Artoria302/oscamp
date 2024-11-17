@@ -1,5 +1,6 @@
 use std::fs::{self, File, FileType};
 use std::io::{self, prelude::*};
+use std::string::ToString;
 use std::{string::String, vec::Vec};
 
 #[cfg(all(not(feature = "axstd"), unix))]
@@ -27,6 +28,8 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
     ("pwd", do_pwd),
     ("rm", do_rm),
     ("uname", do_uname),
+    ("rename", do_rename),
+    ("mv", do_mv),
 ];
 
 fn file_type_to_char(ty: FileType) -> char {
@@ -258,6 +261,82 @@ fn do_uname(_args: &str) {
         arch = arch,
         plat = platform,
     );
+}
+
+fn do_rename(args: &str) {
+    if args.is_empty() {
+        print_err!("rename", "missing operand");
+        return;
+    }
+    let mut old = "";
+    let mut new = "";
+    for (i, path) in args.split_whitespace().enumerate() {
+        if i == 0 {
+            old = path;
+        }
+        if i == 1 {
+            new = path;
+        }
+        if i == 2 {
+            print_err!("rename", "too many arguments");
+            return;
+        }
+    }
+    if old == "" || new == "" {
+        print_err!("rename", "too few arguments");
+        return;
+    }
+    if let Err(e) = fs::rename(old, new) {
+        print_err!(
+            "rename",
+            format_args!("cannot rename '{old}' to '{new}'"),
+            e
+        );
+    }
+}
+
+fn do_mv(args: &str) {
+    if args.is_empty() {
+        print_err!("mv", "missing operand");
+        return;
+    }
+    let mut old = "";
+    let mut new = "";
+    for (i, path) in args.split_whitespace().enumerate() {
+        if i == 0 {
+            old = path;
+        }
+        if i == 1 {
+            new = path;
+        }
+        if i == 2 {
+            print_err!("mv", "too many arguments");
+            return;
+        }
+    }
+    if old == "" || new == "" {
+        print_err!("mv", "too few arguments");
+        return;
+    }
+    let mut new_path = new.to_string();
+    match fs::metadata(new_path.as_str()) {
+        Ok(m) => {
+            if m.is_dir() {
+                let s = if new_path.ends_with("/") { "" } else { "/" };
+                new_path = format!("{new_path}{s}{old}");
+            }
+        }
+        Err(e) => match e {
+            io::Error::NotFound => {}
+            e => {
+                print_err!("mv", format_args!("cannot mv '{old}' to '{new}'"), e);
+            }
+        },
+    }
+
+    if let Err(e) = fs::rename(old, new_path.as_str()) {
+        print_err!("mv", format_args!("cannot mv '{old}' to '{new}'"), e);
+    }
 }
 
 fn do_help(_args: &str) {
